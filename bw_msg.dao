@@ -1,0 +1,48 @@
+<?php
+require_once ('VO.inc');
+require_once ('DAO.inc');
+class bw_messageDAO extends DAO {
+
+    public function get_record($key=null) {
+        $sql = 'select GZRNPRD_KEY as period_key, GZRNPRD_NOTE_KEY as msg_key, GZRNOTE_NCDE_CODE as note_code, 
+                    GZRNPRD_START_DATE as start_date, GZRNPRD_END_DATE as end_date, GZRNPRD_ACTIVE as active, 
+                    GZRNOTE_TITLE as message_title, GZRNOTE_TEXT as message_text, GZRNPRD_ACTIVITY_DATE as activity_date
+                  from gzrnote, gzrnprd
+                  where gzrnote_key = gzrnprd_note_key';
+        
+        $parms = array();
+        
+        if (isset($key)) {
+            $sql .= ' and GZRNPRD_KEY = :period_key';
+            $parms[':period_key'] = $key;
+        }
+        
+        $sql .= ' order by GZRNPRD_KEY desc';
+        
+        return $this->return_all('VO', $sql, $parms);
+    }
+    
+    public function get_permissions($pidm) {
+        $sql = 'select gzrnprm_note_code note_code from gzrnprm where gzrnprm_pidm = :pidm';
+        return $this->return_all('VO', $sql, array(':pidm' => $pidm));
+    }
+    
+    public function get_response($period_key)
+    {
+        $sql = 'select spriden_first_name as fname, spriden_last_name as lname, gzrnrsp_nrcd_code as response, gzrnrsp_key as key
+                    from gzrnrsp, spriden
+                    where gzrnrsp_pidm = spriden_pidm
+                    and gzrnrsp_period_key = :period_key
+                    and spriden_change_ind is null
+                    and gzrnrsp_nrcd_code is not null';
+
+        return $this->return_all('VO', $sql, array(':period_key' => $period_key));
+    }
+    
+    public function end_msg_period($period_key) {
+        $sql = 'update gzrnprd set gzrnprd_end_date = sysdate where gzrnprd_key = :period_key';
+        return $this->run(null, $sql, array(':period_key' => $period_key));
+    }
+}
+
+?>
